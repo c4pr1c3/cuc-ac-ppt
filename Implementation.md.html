@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="generator" content="pandoc">
+  <meta name="author" content="黄玮">
+  <title>在应用开发项目中如何安全实现密码学算法</title>
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
+  <link rel="stylesheet" href="lib/reveal.js.v4/dist/reset.css">
+  <link rel="stylesheet" href="lib/reveal.js.v4/dist/reveal.css">
+
+  <!-- For syntax highlighting using highlight.js-->
+  <link rel="stylesheet" href="lib/reveal.js.v4/plugin/highlight/monokai.css">
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    span.underline{text-decoration: underline;}
+    div.column{display: inline-block; vertical-align: top; width: 50%;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    ul.task-list{list-style: none;}
+  </style>
+  <link rel="stylesheet" href="lib/reveal.js.v4/dist/theme/my-white.css" id="theme">
+
+</head>
+<body>
+  <div class="reveal">
+    <div class="slides">
+
+<section id="title-slide">
+  <h1 class="title">在应用开发项目中如何安全实现密码学算法</h1>
+  <p class="author">黄玮</p>
+</section>
+
+<section>
+<section id="tl-dr" class="title-slide slide level1">
+<h1>TL; DR</h1>
+
+</section>
+<section class="slide level2">
+
+<blockquote>
+<p>Too Long; Don’t Read</p>
+</blockquote>
+<p><a href="https://github.com/jedisct1/libsodium">LibSodium</a></p>
+<p><a href="https://github.com/jedisct1/libsodium">LibSodium</a></p>
+<p><a href="https://github.com/jedisct1/libsodium">LibSodium</a></p>
+</section>
+</section>
+<section>
+<section id="为什么不推荐使用-xxx" class="title-slide slide level1">
+<h1>为什么不推荐使用 XXX</h1>
+
+</section>
+<section class="slide level2">
+
+<ul>
+<li><a href="http://php.net/manual/zh/book.mcrypt.php">PHP - Mcrypt</a> ?</li>
+<li><a href="https://www.openssl.org/">OpenSSL</a> ?</li>
+<li><a href="https://www.bouncycastle.org/">Java / C# - Bouncy Castle</a> ?</li>
+<li><a href="https://github.com/google/keyczar">Google 出品 KeyCzar</a> ?</li>
+<li><a href="https://pypi.org/project/pycrypto/">pycrypto</a> ?</li>
+</ul>
+</section>
+<section id="xxx-普遍存在的问题" class="slide level2">
+<h2>XXX 普遍存在的问题</h2>
+<ul>
+<li>提供已证明不安全的密码学算法的实现且未给予相应的易于理解警示或警告
+<ul>
+<li>MD5 / SHA-1 / DES / ECB 模式的对称加密算法</li>
+</ul></li>
+<li>提供的是不规范、不健壮的密码学算法实现
+<ul>
+<li><a href="http://php.net/manual/zh/function.mcrypt-encrypt.php">Mcrypt 提供的对称加密算法使用 <code>NULL</code> 字符填充</a></li>
+<li><a href="https://codahale.com/a-lesson-in-timing-attacks/">消息验证码验证算法存在「Timing Attack」缺陷</a>，</li>
+</ul></li>
+<li>提供的是 <strong>最基础</strong> 的密码学算法实现，对于没有密码学专业背景的程序员来说容易编写出存在缺陷的密码学算法
+<ul>
+<li>缺少提供符合 <a href="https://en.wikipedia.org/wiki/Authenticated_encryption">AEAD</a> 标准的数据加密算法 API</li>
+</ul></li>
+<li>停止更新或长时间无人维护更新
+<ul>
+<li><a href="https://pypi.org/project/pycrypto/">pycrypto</a></li>
+<li><a href="https://sourceforge.net/p/mcrypt/bugs/">Mcrypt Known Open Bugs</a></li>
+</ul></li>
+</ul>
+</section>
+<section id="为什么没有首先推荐-nacl" class="slide level2">
+<h2>为什么没有首先推荐 <a href="http://nacl.cr.yp.to/">NaCl</a></h2>
+<ul>
+<li>优秀的加密算法实现库</li>
+<li>除非你
+<ul>
+<li>使用 C/C++ 开发的应用</li>
+<li>使用 Python 开发的应用可以使用 <a href="https://github.com/pyca/pynacl">PyNaCl</a>
+<ul>
+<li><a href="https://github.com/c4pr1c3/ac-demo/tree/master/examples/python">延伸阅读 - Python 的密码学算法选型依据</a></li>
+</ul></li>
+</ul></li>
+<li><a href="https://github.com/jedisct1/libsodium">LibSodium</a> 是基于 NaCl 开发的，与 NaCl <strong>100%</strong> API 兼容，扩充了一些新特性，提供<a href="https://download.libsodium.org/doc/bindings_for_other_languages/index.html">更好的跨平台移植性</a></li>
+<li>PHP 是主流编程语言里第一个在语言标准库里内置集成了对 <a href="https://github.com/jedisct1/libsodium">LibSodium</a> 的 API 绑定实现支持</li>
+</ul>
+</section>
+</section>
+<section>
+<section id="为什么强烈推荐-libsodium" class="title-slide slide level1">
+<h1>为什么强烈推荐 LibSodium</h1>
+
+</section>
+<section id="顶尖专业团队出品" class="slide level2">
+<h2>顶尖专业团队出品</h2>
+<p>基于 NaCl 开发，而 NaCl 作者团队拥有三位顶尖密码学专家</p>
+<ul>
+<li><a href="http://cr.yp.to/">Dan Bernstein</a> 椭圆曲线加密和签名算法 Curve25519, Ed25519 的作者，开发了 qmail, djbdns 等知名以安全著称的流行开源互联网基础设施软件</li>
+<li><a href="https://hyperelliptic.org/">Tanja Lange</a> 椭圆曲线加密和签名算法专家</li>
+<li><a href="https://cryptojedi.org/peter/index.shtml">Peter Schwabe</a> 擅长密码学侧信道分析</li>
+</ul>
+</section>
+<section class="slide level2">
+
+<ul>
+<li>LibSodium 的项目领导者 <a href="https://github.com/jedisct1">Frank Denis</a> 是一名活跃的优秀开源软件开发者和安全专家。
+<ul>
+<li><a href="https://2017.hack.lu/archive/2017/hacklu-crypto-api.pdf">强烈推荐阅读 Frank Denis 在 2017 年 hack.lu 上的一次关于「密码学算法实现 API 设计方法」的技术分享</a></li>
+</ul></li>
+<li>在该项目<a href="https://github.com/jedisct1/libsodium/blob/master/AUTHORS">算法设计者和开发者名单里</a> 我们依然可以看到 NaCl 的三位作者（特别是 <a href="http://cr.yp.to/">Dan Bernstein</a>）均赫然在列。</li>
+</ul>
+</section>
+<section id="优秀的算法设计-健壮的代码实现" class="slide level2">
+<h2>优秀的算法设计 + <a href="https://download.libsodium.org/doc/internals/">健壮的代码实现</a></h2>
+<ul>
+<li>具备健壮性和一致性密码学特征的简单接口</li>
+<li>每一步计算操作均采用了「常量化」耗时处理（对抗「Timing Attack」）</li>
+<li>与 <a href="https://w3c.github.io/webcrypto/">WebCrypto</a> 这种由「委员会」票选出来的一堆流行密码学算法大杂烩不同，libsodium 的密码原语和构造都经过精心挑选，并且明确声明了它们的真实世界软件应用的安全属性</li>
+<li>libsodium 的实际安全性能表现优于美国国家标准技术研究所（NIST）的联邦信息处理标准 (Federal Information Processing Standard, FIPS) 标准</li>
+</ul>
+</section>
+<section id="哪些情况下你无法选择-libsodium" class="slide level2">
+<h2>哪些情况下你无法选择 libsodium</h2>
+<ul>
+<li>各个国家的密码学算法标准合规性要求实现的算法在 libsodium 中没有获得实现支持</li>
+<li>你选择的编程语言还没有对应的封装 API 可用</li>
+<li><a href="https://docs.microsoft.com/zh-cn/windows/uwp/security/export-restrictions-on-cryptography">强加密算法使用属于违法行为的某些场景</a></li>
+<li>强制兼容老旧不安全密码学算法的需求场景</li>
+</ul>
+</section>
+</section>
+<section>
+<section id="php" class="title-slide slide level1">
+<h1>PHP</h1>
+
+</section>
+<section class="slide level2">
+
+<ul>
+<li><a href="https://pecl.php.net/package/libsodium">Frank Denis 亲自操刀主持的 libsodium PHP 移植实现</a></li>
+<li><a href="https://paragonie.com/book/pecl-libsodium">PHP Libsodium 最详细文档 by Paragon Initiative Enterprises</a></li>
+<li><a href="https://paragonie.com/blog/2017/02/cryptographically-secure-php-development">密码学意义上的 PHP 安全开发 by Paragon Initiative Enterprises 2017-02-09</a></li>
+<li><a href="https://github.com/paragonie/halite">Halite - libsodium PHP 实现的更进一步封装 API</a>
+<ul>
+<li>在基础 libsodium 功能的基础上进一步封装了<a href="https://github.com/paragonie/halite/blob/master/doc/Features.md">常用 Web 服务端功能 API</a>：Cookie加密与解密、文件加密与解密、口令存储与验证</li>
+</ul></li>
+</ul>
+</section>
+</section>
+<section>
+<section id="python" class="title-slide slide level1">
+<h1>Python</h1>
+
+</section>
+<section class="slide level2">
+
+<ul>
+<li><a href="https://github.com/c4pr1c3/ac-demo/tree/master/examples/python">常见密码学算法 Python 版示例</a></li>
+</ul>
+</section>
+</section>
+<section>
+<section id="其他主流编程语言的密码学库" class="title-slide slide level1">
+<h1>其他主流编程语言的密码学库</h1>
+
+</section>
+<section class="slide level2">
+
+<ul>
+<li><a href="https://www.cryptopp.com/">C++ - Crypto++</a>
+<ul>
+<li>跨平台第三方支持，丰富且持续更新的现代密码学 API 实现和完善文档</li>
+</ul></li>
+<li><a href="https://docs.oracle.com/javase/8/docs/technotes/guides/security/crypto/CryptoSpec.html">Java Cryptography Architecture (JCA)</a>
+<ul>
+<li>不愧为企业级开发市场的王者，官方支持的丰富且持续更新的现代密码学 API 实现和完善文档</li>
+</ul></li>
+</ul>
+</section>
+<section class="slide level2">
+
+<ul>
+<li><a href="https://www.w3.org/TR/WebCryptoAPI/">Javascript - Web Crypto API（W3C Recommendation 2018.6）</a> | <a href="https://github.com/jedisct1/libsodium.js">libsodium.js</a>
+<ul>
+<li>浏览器即将提供原生的现代密码学 API 支持，部分现代浏览器已提供了 API 实现</li>
+</ul></li>
+<li><a href="https://docs.microsoft.com/zh-cn/dotnet/api/system.security.cryptography">.NET - System.Security.Cryptography</a>
+<ul>
+<li>现代密码学 API 支持并不完善（例如不支持 AES-GCM）</li>
+</ul></li>
+</ul>
+</section>
+</section>
+<section>
+<section id="其他主流平台的安全编程实践" class="title-slide slide level1">
+<h1>其他主流平台的安全编程实践</h1>
+
+</section>
+<section class="slide level2">
+
+<ul>
+<li><a href="https://docs.microsoft.com/zh-cn/windows/uwp/security/intro-to-secure-windows-app-development">安全 Windows 应用开发简介 from MSDN</a></li>
+<li><a href="https://developer.apple.com/library/archive/documentation/Security/Conceptual/cryptoservices/Introduction/Introduction.html#//apple_ref/doc/uid/TP40011172-CH1-SW1">苹果公司的密码学相关服务开发指南 from developer.apple.com</a></li>
+<li><a href="https://developer.android.com/topic/security/best-practices">Android App 开发最佳安全实践 from developer.android.com</a></li>
+</ul>
+</section>
+</section>
+    </div>
+  </div>
+
+  <script src="lib/reveal.js.v4/dist/reveal.js"></script>
+
+  <!-- reveal.js plugins -->
+  <script src="lib/reveal.js.v4/plugin/notes/notes.js"></script>
+  <script src="lib/reveal.js.v4/plugin/search/search.js"></script>
+  <script src="lib/reveal.js.v4/plugin/zoom/zoom.js"></script>
+  <script src="lib/reveal.js.v4/plugin/math/math.js"></script>
+  <script src="lib/reveal.js.v4/plugin/markdown/markdown.js"></script>
+  <script src="lib/reveal.js.v4/plugin/highlight/highlight.js"></script>
+  <script src="lib/reveal.js.v4/plugin/reveal.js-plugins/menu/menu.js"></script>
+  <script src="lib/reveal.js.v4/plugin/reveal.js-plugins/chalkboard/plugin.js"></script>
+  <script src="lib/reveal.js.v4/plugin/reveal.js-plugins/audio-slideshow/plugin.js"></script>
+
+  <script>
+    
+      // Full list of configuration options available at:
+      // https://revealjs.com/config/
+      Reveal.initialize({
+      
+        // Display the page number of the current slide
+        slideNumber: true,
+        // Push each slide change to the browser history
+        history: true,
+        // Transition style
+        transition: 'fade', // none/fade/slide/convex/concave/zoom
+        math: {
+          mathjax: '',
+          config: 'TeX-AMS_HTML-full',
+          tex2jax: {
+            inlineMath: [['\\(','\\)']],
+            displayMath: [['\\[','\\]']],
+            balanceBraces: true,
+            processEscapes: false,
+            processRefs: true,
+            processEnvironments: true,
+            preview: 'TeX',
+            skipTags: ['script','noscript','style','textarea','pre','code'],
+            ignoreClass: 'tex2jax_ignore',
+            processClass: 'tex2jax_process'
+          },
+        },
+
+    menu: {
+  		// Specifies which side of the presentation the menu will 
+  		// be shown. Use 'left' or 'right'.
+  		side: 'left',
+  
+  		// Specifies the width of the menu.
+  		// Can be one of the following:
+  		// 'normal', 'wide', 'third', 'half', 'full', or
+  		// any valid css length value
+  		width: 'normal',
+  
+  		// Add slide numbers to the titles in the slide list.
+  		// Use 'true' or format string (same as reveal.js slide numbers)
+  		numbers: true,
+  
+  		// Specifies which slide elements will be used for generating
+  		// the slide titles in the menu. The default selects the first
+  		// heading element found in the slide, but you can specify any
+  		// valid css selector and the text from the first matching
+  		// element will be used.
+  		// Note: that a section data-menu-title attribute or an element
+  		// with a menu-title class will take precedence over this option
+  		titleSelector: 'h1, h2, h3, h4, h5, h6',
+  
+  		// If slides do not have a matching title, attempt to use the
+  		// start of the text content as the title instead
+  		useTextContentForMissingTitles: false,
+  
+  		// Hide slides from the menu that do not have a title.
+  		// Set to 'true' to only list slides with titles.
+  		hideMissingTitles: false,
+  
+  		// Adds markers to the slide titles to indicate the 
+  		// progress through the presentation. Set to 'false'
+  		// to hide the markers.
+  		markers: true,
+  
+  		// Specify custom panels to be included in the menu, by
+  		// providing an array of objects with 'title', 'icon'
+  		// properties, and either a 'src' or 'content' property.
+  		custom: false,
+  
+  		// Specifies the themes that will be available in the themes
+  		// menu panel. Set to 'true' to show the themes menu panel
+  		// with the default themes list. Alternatively, provide an
+  		// array to specify the themes to make available in the
+  		// themes menu panel, for example...
+  		// [
+  		//     { name: 'Black', theme: 'css/theme/black.css' },
+  		//     { name: 'White', theme: 'css/theme/white.css' },
+  		//     { name: 'League', theme: 'css/theme/league.css' }
+  		// ]
+  		themes: false,
+  
+  		// Specifies the path to the default theme files. If your
+  		// presentation uses a different path to the standard reveal
+  		// layout then you need to provide this option, but only
+  		// when 'themes' is set to 'true'. If you provide your own 
+  		// list of themes or 'themes' is set to 'false' the 
+  		// 'themesPath' option is ignored.
+  		themesPath: 'css/theme/',
+  
+  		// Specifies if the transitions menu panel will be shown.
+  		// Set to 'true' to show the transitions menu panel with
+  		// the default transitions list. Alternatively, provide an
+  		// array to specify the transitions to make available in
+  		// the transitions panel, for example...
+  		// ['None', 'Fade', 'Slide']
+  		transitions: false,
+  
+  		// Adds a menu button to the slides to open the menu panel.
+  		// Set to 'false' to hide the button.
+  		openButton: true,
+  
+  		// If 'true' allows the slide number in the presentation to
+  		// open the menu panel. The reveal.js slideNumber option must 
+  		// be displayed for this to take effect
+  		openSlideNumber: false,
+  
+  		// If true allows the user to open and navigate the menu using
+  		// the keyboard. Standard keyboard interaction with reveal
+  		// will be disabled while the menu is open.
+  		keyboard: true,
+  
+  		// Normally the menu will close on user actions such as
+  		// selecting a menu item, or clicking the presentation area.
+  		// If 'true', the sticky option will leave the menu open
+  		// until it is explicitly closed, that is, using the close
+  		// button or pressing the ESC or m key (when the keyboard 
+  		// interaction option is enabled).
+  		sticky: false,
+  
+  		// If 'true' standard menu items will be automatically opened
+  		// when navigating using the keyboard. Note: this only takes 
+  		// effect when both the 'keyboard' and 'sticky' options are enabled.
+  		autoOpen: true,
+  
+  		// If 'true' the menu will not be created until it is explicitly
+  		// requested by calling RevealMenu.init(). Note this will delay
+  		// the creation of all menu panels, including custom panels, and
+  		// the menu button.
+  		delayInit: false,
+  
+  		// If 'true' the menu will be shown when the menu is initialised.
+  		openOnInit: false,
+  
+  		// By default the menu will load it's own font-awesome library
+  		// icons. If your presentation needs to load a different
+  		// font-awesome library the 'loadIcons' option can be set to false
+  		// and the menu will not attempt to load the font-awesome library.
+  		loadIcons: true
+
+    },
+
+    chalkboard: {
+        boardmarkerWidth: 3,
+        chalkWidth: 7,
+        chalkEffect: 1.0,
+        storage: null,
+        src: null,
+        readOnly: undefined,
+        toggleChalkboardButton: { left: "80px" },
+				toggleNotesButton: { left: "130px" },
+        transition: 800,
+        theme: "chalkboard",
+    },
+
+        // reveal.js plugins
+        plugins: [
+          RevealMath,
+          RevealNotes,
+          RevealSearch,
+          RevealZoom,
+          RevealMarkdown, 
+          RevealMenu, 
+          RevealHighlight,
+          RevealChalkboard
+        ]
+      });
+    </script>
+    </body>
+</html>
